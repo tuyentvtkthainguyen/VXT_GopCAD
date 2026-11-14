@@ -23,6 +23,7 @@ namespace VXT.GopCAD
         private readonly CheckBox ckLabel = new CheckBox();
         private readonly CheckBox ckMangle = new CheckBox();
         private readonly CheckBox ckOpen = new CheckBox();
+        private readonly CheckBox ckSheet = new CheckBox();
         private readonly TextBox tbOut = new TextBox();
         private readonly ProgressBar pb = new ProgressBar();
         private readonly Label lbStatus = new Label();
@@ -41,7 +42,7 @@ namespace VXT.GopCAD
             MaximizeBox = false;
             MinimizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(760, 560);
+            ClientSize = new Size(760, 584);
             AllowDrop = true;
 
             // ----- Danh sách file -----
@@ -66,7 +67,7 @@ namespace VXT.GopCAD
             AddBtn("Sắp xếp A→Z", bx, ref by, (s, e) => SapXep());
 
             // ----- Tùy chọn -----
-            var gb = new GroupBox { Text = "Tùy chọn gộp", Bounds = new Rectangle(12, 284, 736, 152) };
+            var gb = new GroupBox { Text = "Tùy chọn gộp", Bounds = new Rectangle(12, 284, 736, 176) };
             Controls.Add(gb);
 
             rbHang.Text = "Xếp các bản vẽ thành hàng, số bản vẽ/hàng:";
@@ -100,33 +101,37 @@ namespace VXT.GopCAD
             ckMangle.Text = "Block/kiểu chữ trùng tên: đổi tên (bỏ chọn = dùng bản của file đầu tiên)";
             ckMangle.SetBounds(12, 128, 600, 22);
 
-            gb.Controls.AddRange(new Control[] { rbHang, nCot, lbGap, tbGap, rbGiu, lbLay, cbLayout, ckBlock, ckPrefix, ckLabel, ckMangle });
+            ckSheet.Text = "Sheet Revit → Model: bản vẽ giữ 1:1, khung tên phóng theo tỷ lệ bản vẽ (in thẳng từ Model)";
+            ckSheet.SetBounds(12, 150, 700, 22);
+            ckSheet.CheckedChanged += (s, e) => { cbLayout.Enabled = !ckSheet.Checked; };
+
+            gb.Controls.AddRange(new Control[] { rbHang, nCot, lbGap, tbGap, rbGiu, lbLay, cbLayout, ckBlock, ckPrefix, ckLabel, ckMangle, ckSheet });
             rbHang.CheckedChanged += (s, e) => { nCot.Enabled = tbGap.Enabled = rbHang.Checked; };
 
             // ----- File kết quả -----
-            Controls.Add(new Label { Text = "File kết quả:", Bounds = new Rectangle(12, 451, 85, 20) });
-            tbOut.SetBounds(100, 448, 560, 23);
+            Controls.Add(new Label { Text = "File kết quả:", Bounds = new Rectangle(12, 475, 85, 20) });
+            tbOut.SetBounds(100, 472, 560, 23);
             Controls.Add(tbOut);
-            var btnOut = new Button { Text = "...", Bounds = new Rectangle(668, 447, 80, 25) };
+            var btnOut = new Button { Text = "...", Bounds = new Rectangle(668, 471, 80, 25) };
             btnOut.Click += (s, e) => ChonFileKetQua();
             Controls.Add(btnOut);
 
             ckOpen.Text = "Mở file sau khi gộp";
             ckOpen.Checked = true;
-            ckOpen.SetBounds(12, 478, 200, 22);
+            ckOpen.SetBounds(12, 502, 200, 22);
             Controls.Add(ckOpen);
 
-            pb.SetBounds(12, 504, 736, 16);
+            pb.SetBounds(12, 528, 736, 16);
             Controls.Add(pb);
-            lbStatus.SetBounds(12, 528, 530, 22);
+            lbStatus.SetBounds(12, 552, 530, 22);
             lbStatus.Text = "Kéo thả file/thư mục DWG vào danh sách hoặc bấm \"Thêm file...\"";
             Controls.Add(lbStatus);
 
             btnGop.Text = "Gộp";
-            btnGop.SetBounds(560, 525, 90, 28);
+            btnGop.SetBounds(560, 549, 90, 28);
             btnGop.Click += (s, e) => Gop();
             btnDong.Text = "Đóng";
-            btnDong.SetBounds(658, 525, 90, 28);
+            btnDong.SetBounds(658, 549, 90, 28);
             btnDong.Click += (s, e) => { if (running) cancel = true; else Close(); };
             Controls.Add(btnGop);
             Controls.Add(btnDong);
@@ -280,7 +285,8 @@ namespace VXT.GopCAD
                 AsBlock = ckBlock.Checked,
                 LayerPrefix = ckPrefix.Checked,
                 Label = ckLabel.Checked,
-                MangleDuplicates = ckMangle.Checked
+                MangleDuplicates = ckMangle.Checked,
+                SheetToModel = ckSheet.Checked
             };
             foreach (ListViewItem it in lv.Items) o.Items.Add(new MergeItem { FilePath = (string)it.Tag });
 

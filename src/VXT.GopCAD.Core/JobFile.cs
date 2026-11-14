@@ -13,7 +13,7 @@ namespace VXT.GopCAD.Core
     ///   COLUMNS=5
     ///   GAP=0
     ///   LAYOUTS=NONE | FIRST | ALL
-    ///   ASBLOCK=0|1   LAYERPREFIX=0|1   LABEL=0|1   MANGLE=0|1
+    ///   ASBLOCK=0|1   LAYERPREFIX=0|1   LABEL=0|1   MANGLE=0|1   SHEETTOMODEL=0|1
     ///   FILE=đường_dẫn.dwg|Tên layout|Chữ ghi dưới bản vẽ
     /// </summary>
     public static class JobFile
@@ -54,6 +54,7 @@ namespace VXT.GopCAD.Core
                     case "LAYERPREFIX": o.LayerPrefix = IsTrue(v); break;
                     case "LABEL": o.Label = IsTrue(v); break;
                     case "MANGLE": o.MangleDuplicates = IsTrue(v); break;
+                    case "SHEETTOMODEL": o.SheetToModel = IsTrue(v); break;
                     case "FILE":
                         var parts = v.Split('|');
                         o.Items.Add(new MergeItem

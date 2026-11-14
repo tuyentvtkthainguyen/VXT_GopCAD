@@ -50,6 +50,11 @@ namespace VXT.GopCAD.Core
         public bool MangleDuplicates = false;
         /// <summary>Xóa Layout1/Layout2 mặc định khi đã chép được layout.</summary>
         public bool RemoveDefaultLayouts = true;
+        /// <summary>
+        /// Đưa sheet xuống Model theo kiểu CAD truyền thống: bản vẽ giữ 1:1, khung tên và nội dung
+        /// trên Layout được phóng theo tỷ lệ của viewport chính (1/100 → ×100). Không lấy Layout.
+        /// </summary>
+        public bool SheetToModel = false;
     }
 
     public class MergeResult

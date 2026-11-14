@@ -15,7 +15,7 @@ namespace VXT.RevitXuatCAD
         public bool Chon;
     }
 
-    public enum KieuKetQua { MoiSheetMotLayout = 0, ChiModel = 1, ChiFileLe = 2 }
+    public enum KieuKetQua { MoiSheetMotLayout = 0, ChiModel = 1, ChiFileLe = 2, ModelKhungTenTheoTyLe = 3 }
 
     public class XuatJob
     {
@@ -35,7 +35,7 @@ namespace VXT.RevitXuatCAD
     public class XuatSettings
     {
         public string SetupName { get; set; }
-        public int Kieu { get; set; } = 0;
+        public int Kieu { get; set; } = 3;
         public int Columns { get; set; } = 5;
         public string Pattern { get; set; } = "{SoHieu} - {Ten}";
         public bool Label { get; set; } = false;

@@ -38,6 +38,8 @@ namespace VXT.RevitXuatCAD
 
             var opts = GetOptions(job.SetupName);
             opts.MergedViews = true;
+            // Giữ đúng tỷ lệ: 1 đơn vị CAD = 1 mm thật, bản vẽ ở Model luôn 1:1
+            opts.TargetUnit = ExportUnit.Millimeter;
 
             bool gop = job.Kieu != KieuKetQua.ChiFileLe;
             int n = job.Sheets.Count;
@@ -180,6 +182,7 @@ namespace VXT.RevitXuatCAD
             jb.AppendLine("ASBLOCK=0");
             jb.AppendLine("LAYERPREFIX=0");
             jb.AppendLine("MANGLE=0");
+            jb.AppendLine("SHEETTOMODEL=" + (job.Kieu == KieuKetQua.ModelKhungTenTheoTyLe ? "1" : "0"));
             foreach (var (row, file) in ex)
                 jb.AppendLine("FILE=" + file + "|" + Txt.ChoJob(Txt.TheoMau(job.Pattern, row)) + "|" + Txt.ChoJob(row.So + " - " + row.Ten));
             string jobPath = Path.Combine(work, "job.txt");

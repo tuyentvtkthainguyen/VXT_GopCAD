@@ -26,7 +26,7 @@ namespace VXT.GopCAD.Core
             public int Col;
         }
 
-        private class SrcLayout
+        internal class SrcLayout
         {
             public ObjectId Id;
             public string Name;
@@ -118,6 +118,7 @@ namespace VXT.GopCAD.Core
                     res.Warnings.Add(Path.GetFileName(it.FilePath) + ": đơn vị (" + sdb.Insunits +
                                      ") khác file đầu (" + outDb.Insunits + ").");
 
+                if (o.SheetToModel) SheetFlattener.Flatten(sdb, Path.GetFileName(it.FilePath), res);
                 if (o.LayerPrefix) PrefixLayers(sdb, Names.CleanSymbol(baseName));
 
                 CollectModel(sdb, out ObjectIdCollection msIds, out Extents3d? ext);
@@ -172,7 +173,7 @@ namespace VXT.GopCAD.Core
 
                 // ---- Layout ----
                 int n = 0;
-                if (o.Layouts != LayoutImportMode.KhongLay)
+                if (o.Layouts != LayoutImportMode.KhongLay && !o.SheetToModel)
                 {
                     var all = GetSourceLayouts(sdb);
                     List<SrcLayout> pick;
@@ -310,7 +311,7 @@ namespace VXT.GopCAD.Core
 
         // ================= LAYOUT =================
 
-        private static List<SrcLayout> GetSourceLayouts(Database sdb)
+        internal static List<SrcLayout> GetSourceLayouts(Database sdb)
         {
             var list = new List<SrcLayout>();
             using (var tr = sdb.TransactionManager.StartOpenCloseTransaction())
@@ -391,7 +392,7 @@ namespace VXT.GopCAD.Core
         /// Tìm viewport tổng của paper space (không được dời). Ưu tiên Layout.GetViewports();
         /// nếu không có thì coi viewport đầu tiên là viewport tổng khi nó bao trùm mọi nội dung paper space.
         /// </summary>
-        private static ObjectId FindOverallViewport(Transaction tr, Layout sl, BlockTableRecord btr)
+        internal static ObjectId FindOverallViewport(Transaction tr, Layout sl, BlockTableRecord btr)
         {
             try
             {
@@ -429,7 +430,7 @@ namespace VXT.GopCAD.Core
             return contains ? firstVp.ObjectId : ObjectId.Null;
         }
 
-        private static Extents3d Rect(Viewport vp)
+        internal static Extents3d Rect(Viewport vp)
         {
             var c = vp.CenterPoint;
             double hw = vp.Width / 2, hh = vp.Height / 2;

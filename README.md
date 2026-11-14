@@ -58,7 +58,8 @@ Gỡ cài đặt: chạy `uninstall.bat`.
 1. Trong Revit, có thể chọn sẵn các sheet ở Project Browser. Sau đó bấm **VXT › Xuất sheet ra 1 file CAD**.
 2. Tick các sheet cần xuất. Ô tìm kiếm không cần gõ dấu. Muốn bật/tắt nhiều sheet cùng lúc: bôi chọn nhiều dòng rồi bấm phím cách.
 3. Chọn **DWG Export Setup** đã có trong dự án (layer, nét, màu theo bộ của anh).
-4. Chọn kiểu kết quả:
+4. Chọn kiểu kết quả (mọi kiểu đều xuất đơn vị **mm**, bản vẽ ở Model đúng **1:1**):
+   - **Model, khung tên phóng theo tỷ lệ** *(mặc định)*: in thẳng từ Model kiểu CAD truyền thống. Bản vẽ chính giữ 1:1, khung tên và chữ trên sheet phóng theo tỷ lệ bản vẽ chính (1/100 → ×100). Chi tiết khác tỷ lệ trên cùng sheet (vd 1/20 trên sheet 1/100) được phóng hình cho đúng kích thước in, và hệ số DIMLFAC được chỉnh để con số dim vẫn đúng giá trị thật.
    - **Mỗi sheet 1 Layout** *(khuyên dùng)*: ra 1 file DWG, mỗi sheet là một tab Layout có khung tên và viewport giống hệt Revit. Các bản vẽ ở Model được xếp thành hàng, không chồng lên nhau.
    - **Chỉ Model**: ra 1 file DWG, chỉ gồm nội dung Model xếp thành hàng. Lưu ý: khung tên của Revit nằm ở Layout nên kiểu này **không có khung tên**.
    - **Chỉ file lẻ**: mỗi sheet một file DWG, đặt tên theo "Số hiệu - Tên sheet".

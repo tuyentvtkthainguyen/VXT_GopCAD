@@ -16,7 +16,7 @@ namespace VXT.RevitXuatCAD
         private readonly DataGridView dgv = new();
         private readonly Label lbCount = new();
         private readonly ComboBox cbSetup = new();
-        private readonly RadioButton rbLayout = new(), rbModel = new(), rbLe = new();
+        private readonly RadioButton rbLayout = new(), rbModelTL = new(), rbModel = new(), rbLe = new();
         private readonly NumericUpDown nCot = new();
         private readonly CheckBox ckLabel = new(), ckLe = new(), ckOpen = new();
         private readonly TextBox tbPattern = new(), tbOut = new(), tbAccore = new();
@@ -94,66 +94,68 @@ namespace VXT.RevitXuatCAD
             cbSetup.SelectedIndex = si < 0 ? 0 : si;
             Controls.Add(cbSetup);
 
-            var gb = new GroupBox { Text = "Kiểu kết quả", Bounds = new Rectangle(x, 64, w, 116) };
-            rbLayout.Text = "1 file DWG: mỗi sheet 1 Layout, bản vẽ nằm ở Model (khuyên dùng)";
-            rbLayout.SetBounds(10, 20, w - 20, 36);
-            rbModel.Text = "1 file DWG: chỉ Model, các sheet xếp thành hàng";
-            rbModel.SetBounds(10, 58, w - 20, 22);
+            var gb = new GroupBox { Text = "Kiểu kết quả", Bounds = new Rectangle(x, 64, w, 140) };
+            rbModelTL.Text = "1 file DWG ở Model: bản vẽ 1:1, khung tên phóng theo tỷ lệ (in thẳng từ Model)";
+            rbModelTL.SetBounds(10, 20, w - 20, 36);
+            rbLayout.Text = "1 file DWG: mỗi sheet 1 Layout, bản vẽ 1:1 ở Model";
+            rbLayout.SetBounds(10, 58, w - 20, 22);
+            rbModel.Text = "1 file DWG: chỉ Model, không có khung tên";
+            rbModel.SetBounds(10, 82, w - 20, 22);
             rbLe.Text = "Chỉ xuất các file DWG lẻ (không gộp)";
-            rbLe.SetBounds(10, 84, w - 20, 22);
-            gb.Controls.AddRange(new Control[] { rbLayout, rbModel, rbLe });
+            rbLe.SetBounds(10, 106, w - 20, 22);
+            gb.Controls.AddRange(new Control[] { rbModelTL, rbLayout, rbModel, rbLe });
             Controls.Add(gb);
-            (s.Kieu == 1 ? rbModel : s.Kieu == 2 ? rbLe : rbLayout).Checked = true;
+            (s.Kieu == 0 ? rbLayout : s.Kieu == 1 ? rbModel : s.Kieu == 2 ? rbLe : rbModelTL).Checked = true;
 
-            Controls.Add(new Label { Text = "Số sheet mỗi hàng ở Model:", Bounds = new Rectangle(x, 192, 190, 20) });
-            nCot.SetBounds(x + 195, 189, 60, 23);
+            Controls.Add(new Label { Text = "Số sheet mỗi hàng ở Model:", Bounds = new Rectangle(x, 216, 190, 20) });
+            nCot.SetBounds(x + 195, 213, 60, 23);
             nCot.Minimum = 1;
             nCot.Maximum = 50;
             nCot.Value = Math.Max(1, Math.Min(50, s.Columns));
             Controls.Add(nCot);
 
-            Controls.Add(new Label { Text = "Tên Layout:", Bounds = new Rectangle(x, 222, 75, 20) });
-            tbPattern.SetBounds(x + 80, 219, w - 80, 23);
+            Controls.Add(new Label { Text = "Tên Layout:", Bounds = new Rectangle(x, 246, 75, 20) });
+            tbPattern.SetBounds(x + 80, 243, w - 80, 23);
             tbPattern.Text = string.IsNullOrWhiteSpace(s.Pattern) ? "{SoHieu} - {Ten}" : s.Pattern;
             Controls.Add(tbPattern);
             Controls.Add(new Label
             {
                 Text = "Dùng {SoHieu} và {Ten}, ví dụ: KC-{SoHieu}",
                 ForeColor = SystemColors.GrayText,
-                Bounds = new Rectangle(x + 80, 244, w - 80, 18)
+                Bounds = new Rectangle(x + 80, 268, w - 80, 18)
             });
 
             ckLabel.Text = "Ghi số hiệu + tên sheet dưới mỗi bản vẽ ở Model";
-            ckLabel.SetBounds(x, 268, w, 22);
+            ckLabel.SetBounds(x, 292, w, 22);
             ckLabel.Checked = s.Label;
             ckLe.Text = "Giữ thêm các file DWG lẻ của từng sheet";
-            ckLe.SetBounds(x, 292, w, 22);
+            ckLe.SetBounds(x, 316, w, 22);
             ckLe.Checked = s.KeepSingles;
             ckOpen.Text = "Mở thư mục chứa file khi xong";
-            ckOpen.SetBounds(x, 316, w, 22);
+            ckOpen.SetBounds(x, 340, w, 22);
             ckOpen.Checked = s.OpenFolder;
             Controls.AddRange(new Control[] { ckLabel, ckLe, ckOpen });
 
-            Controls.Add(new Label { Text = "File DWG kết quả:", Bounds = new Rectangle(x, 348, w, 20) });
-            tbOut.SetBounds(x, 368, w - 40, 23);
+            Controls.Add(new Label { Text = "File DWG kết quả:", Bounds = new Rectangle(x, 372, w, 20) });
+            tbOut.SetBounds(x, 392, w - 40, 23);
             string folder = !string.IsNullOrEmpty(s.LastFolder) && Directory.Exists(s.LastFolder)
                 ? s.LastFolder : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             tbOut.Text = Path.Combine(folder, Txt.TenFile(docTitle) + "_Sheets.dwg");
             Controls.Add(tbOut);
-            AddButton("...", x + w - 34, 367, 34, (o, e) => ChonOut());
+            AddButton("...", x + w - 34, 391, 34, (o, e) => ChonOut());
 
-            Controls.Add(new Label { Text = "AutoCAD Core Console (accoreconsole.exe):", Bounds = new Rectangle(x, 402, w, 20) });
-            tbAccore.SetBounds(x, 422, w - 40, 23);
+            Controls.Add(new Label { Text = "AutoCAD Core Console (accoreconsole.exe):", Bounds = new Rectangle(x, 426, w, 20) });
+            tbAccore.SetBounds(x, 446, w - 40, 23);
             tbAccore.Text = !string.IsNullOrEmpty(s.AccorePath) && File.Exists(s.AccorePath) ? s.AccorePath : XuatSettings.DetectAccore();
             Controls.Add(tbAccore);
-            AddButton("...", x + w - 34, 421, 34, (o, e) => ChonAccore());
+            AddButton("...", x + w - 34, 445, 34, (o, e) => ChonAccore());
 
             Controls.Add(new Label
             {
                 Text = "Revit xuất từng sheet ra DWG, sau đó AutoCAD Core Console (có sẵn khi cài AutoCAD 2024) " +
                        "chạy ngầm để gộp thành 1 file – không cần mở AutoCAD. Không có AutoCAD thì vẫn xuất được file lẻ.",
                 ForeColor = SystemColors.GrayText,
-                Bounds = new Rectangle(x, 454, w, 64)
+                Bounds = new Rectangle(x, 478, w, 64)
             });
 
             AddButton("Xuất", x + w - 186, 552, 90, (o, e) => OnOk());
@@ -161,6 +163,7 @@ namespace VXT.RevitXuatCAD
 
             rbLe.CheckedChanged += (o, e) => CapNhatTrangThai();
             rbModel.CheckedChanged += (o, e) => CapNhatTrangThai();
+            rbLayout.CheckedChanged += (o, e) => CapNhatTrangThai();
             CapNhatTrangThai();
             Fill();
         }
@@ -241,7 +244,8 @@ namespace VXT.RevitXuatCAD
             try { outp = Path.GetFullPath(outp); }
             catch { Bao("Đường dẫn file kết quả không hợp lệ."); return; }
 
-            var kieu = rbLayout.Checked ? KieuKetQua.MoiSheetMotLayout : rbModel.Checked ? KieuKetQua.ChiModel : KieuKetQua.ChiFileLe;
+            var kieu = rbLayout.Checked ? KieuKetQua.MoiSheetMotLayout : rbModel.Checked ? KieuKetQua.ChiModel
+                     : rbLe.Checked ? KieuKetQua.ChiFileLe : KieuKetQua.ModelKhungTenTheoTyLe;
             string acc = tbAccore.Text.Trim();
             if (kieu != KieuKetQua.ChiFileLe && !File.Exists(acc))
             {
@@ -256,7 +260,8 @@ namespace VXT.RevitXuatCAD
                 return;
 
             _s.SetupName = cbSetup.SelectedIndex <= 0 ? null : (string)cbSetup.SelectedItem;
-            _s.Kieu = (int)(rbLayout.Checked ? KieuKetQua.MoiSheetMotLayout : rbModel.Checked ? KieuKetQua.ChiModel : KieuKetQua.ChiFileLe);
+            _s.Kieu = (int)(rbLayout.Checked ? KieuKetQua.MoiSheetMotLayout : rbModel.Checked ? KieuKetQua.ChiModel
+                          : rbLe.Checked ? KieuKetQua.ChiFileLe : KieuKetQua.ModelKhungTenTheoTyLe);
             _s.Columns = (int)nCot.Value;
             _s.Pattern = tbPattern.Text;
             _s.Label = ckLabel.Checked;

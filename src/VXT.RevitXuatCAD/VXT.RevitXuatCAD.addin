@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>VXT Xuat Sheet CAD</Name>
+    <Assembly>VXT.RevitXuatCAD\VXT.RevitXuatCAD.dll</Assembly>
+    <AddInId>D96A9788-C46C-49C0-9E52-C3BC0CE32443</AddInId>
+    <FullClassName>VXT.RevitXuatCAD.App</FullClassName>
+    <VendorId>VXT</VendorId>
+    <VendorDescription>Vu Xuan Tuyen</VendorDescription>
+  </AddIn>
+</RevitAddIns>

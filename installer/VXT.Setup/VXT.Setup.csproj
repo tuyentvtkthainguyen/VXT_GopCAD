@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Trình cài đặt 1 file exe: chứa sẵn các DLL, chép vào AutoCAD 2024 / Revit 2025. Không cần quyền Admin. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>VXT_GopCAD_Setup_1.0.0</AssemblyName>
+    <RootNamespace>VXT.Setup</RootNamespace>
+    <Version>1.0.0</Version>
+    <Product>VXT Gop CAD</Product>
+    <Company>VXT - Vu Xuan Tuyen</Company>
+    <Description>Cai dat VXT Gop CAD cho AutoCAD 2024 va Revit 2025</Description>
+    <OutputPath>..\..\Output\setup_build\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\bin\AutoCAD\VXT.GopCAD.dll" LogicalName="VXT.GopCAD.dll" />
+    <EmbeddedResource Include="..\..\bin\AutoCAD\VXT.GopCAD.Core.dll" LogicalName="VXT.GopCAD.Core.dll" />
+    <EmbeddedResource Include="..\..\bin\Revit\VXT.RevitXuatCAD.dll" LogicalName="VXT.RevitXuatCAD.dll" />
+    <EmbeddedResource Include="..\..\bundle\PackageContents.xml" LogicalName="PackageContents.xml" />
+    <EmbeddedResource Include="..\..\src\VXT.RevitXuatCAD\VXT.RevitXuatCAD.addin" LogicalName="VXT.RevitXuatCAD.addin" />
+  </ItemGroup>
+</Project>

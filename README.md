@@ -15,7 +15,9 @@ Bộ này có 2 phần:
 
 ## 1. Build và cài đặt
 
-**Cách nhanh nhất – tạo Setup.exe:** cài .NET SDK 8 (`winget install Microsoft.DotNet.SDK.8`) và Inno Setup 6 (`winget install JRSoftware.InnoSetup`), rồi bấm đúp `TaoSetupExe.bat`. File `Output\VXT_GopCAD_Setup_1.0.0.exe` sẽ được tạo; chạy file này để cài (không cần quyền Admin), hoặc mang sang máy khác cài. Gỡ cài đặt trong *Settings › Apps*.
+**Cách nhanh nhất – tạo Setup.exe (không cần Inno Setup):** bấm đúp `TaoExe.bat` (chỉ cần .NET SDK). Kết quả: `Output\VXT_GopCAD_Setup_1.0.0.exe` – 1 file duy nhất, chạy là cài/gỡ cho AutoCAD 2024 và Revit 2025, không cần quyền Admin.
+
+**Cách khác – bộ cài Inno Setup:** cài .NET SDK 8 (`winget install Microsoft.DotNet.SDK.8`) và Inno Setup 6 (`winget install JRSoftware.InnoSetup`), rồi bấm đúp `TaoSetupExe.bat`. File `Output\VXT_GopCAD_Setup_1.0.0.exe` sẽ được tạo; chạy file này để cài (không cần quyền Admin), hoặc mang sang máy khác cài. Gỡ cài đặt trong *Settings › Apps*.
 
 Cách thủ công:
 

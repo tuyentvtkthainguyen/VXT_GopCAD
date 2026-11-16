@@ -19,6 +19,7 @@
       <Commands GroupName="VXT">
         <Command Global="VXTGOP" Local="VXTGOP" />
         <Command Global="VXTDANHSO" Local="VXTDANHSO" />
+        <Command Global="VXTINPDF" Local="VXTINPDF" />
       </Commands>
     </ComponentEntry>
   </Components>

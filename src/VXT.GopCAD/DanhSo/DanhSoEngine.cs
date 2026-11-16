@@ -490,6 +490,61 @@ namespace VXT.GopCAD.DanhSo
             else if (e is DBText t) t.TextString = s;
         }
 
+        /// <summary>Đọc số/tên đã điền (text liên kết hoặc thuộc tính) cho các bản vẽ – dùng khi in theo thứ tự.</summary>
+        public static void ReadNumbers(Database db, List<SheetItem> items, DanhSoSettings s)
+        {
+            using (var tr = db.TransactionManager.StartTransaction())
+            {
+                var links = LinkMap(tr, items.Select(i => i.SpaceId));
+                foreach (var it in items)
+                {
+                    string Get(string kind, PosMode mode, string tag)
+                    {
+                        if (mode == PosMode.Attribute && tag != "")
+                        {
+                            var ar = FindAtt(tr, it, tag, OpenMode.ForRead);
+                            if (ar != null && ar.TextString.Trim() != "") return Clean(ar.TextString);
+                        }
+                        if (links.TryGetValue(it.Handle + "|" + kind, out var l))
+                        {
+                            var id = l.FirstOrDefault(x => !x.IsErased);
+                            if (!id.IsNull) return PlainText((Entity)tr.GetObject(id, OpenMode.ForRead));
+                        }
+                        return "";
+                    }
+                    it.Number = Get("NUM", s.NumMode, s.NumTag);
+                    it.Name = Get("NAME", s.NameMode, s.NameTag);
+                }
+                tr.Commit();
+            }
+        }
+
+        /// <summary>So sánh tự nhiên: KC-2 đứng trước KC-10.</summary>
+        public static int NaturalCompare(string a, string b)
+        {
+            a = a ?? ""; b = b ?? "";
+            int i = 0, j = 0;
+            while (i < a.Length && j < b.Length)
+            {
+                if (char.IsDigit(a[i]) && char.IsDigit(b[j]))
+                {
+                    int si = i, sj = j;
+                    while (i < a.Length && char.IsDigit(a[i])) i++;
+                    while (j < b.Length && char.IsDigit(b[j])) j++;
+                    var na = a.Substring(si, i - si).TrimStart('0'); var nb = b.Substring(sj, j - sj).TrimStart('0');
+                    int c = na.Length != nb.Length ? na.Length.CompareTo(nb.Length) : string.CompareOrdinal(na, nb);
+                    if (c != 0) return c;
+                }
+                else
+                {
+                    int c = char.ToUpperInvariant(a[i]).CompareTo(char.ToUpperInvariant(b[j]));
+                    if (c != 0) return c;
+                    i++; j++;
+                }
+            }
+            return (a.Length - i).CompareTo(b.Length - j);
+        }
+
         // ---------------- tên mặc định ----------------
         /// <summary>Điền tên mặc định cho các dòng chưa sửa tay: thuộc tính → text đã liên kết → text tại điểm tên → tên sheet Revit / tên layout.</summary>
         public static void FillDefaultNames(Database db, List<SheetItem> items, DanhSoSettings s)

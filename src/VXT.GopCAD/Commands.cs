@@ -85,6 +85,24 @@ namespace VXT.GopCAD
             AcApp.ShowAlertDialog(msg + "\n\nGõ U để hoàn tác nếu cần.");
         }
 
+        /// <summary>In hàng loạt / xuất PDF các bản vẽ theo thứ tự số bản vẽ.</summary>
+        [CommandMethod("VXT", "VXTINPDF", CommandFlags.Modal)]
+        public void RunInPdf()
+        {
+            var doc = AcApp.DocumentManager.MdiActiveDocument;
+            if (doc == null) return;
+            DS.InPdfForm f;
+            try { f = new DS.InPdfForm(doc); }
+            catch (System.Exception ex) { doc.Editor.WriteMessage("\nVXTINPDF: " + ex.Message); return; }
+            using (f)
+                if (AcApp.ShowModalDialog(f) != System.Windows.Forms.DialogResult.OK) return;
+            string msg;
+            try { msg = DS.InEngine.Plot(doc, f.Items, f.S); }
+            catch (System.Exception ex) { msg = "Lỗi khi in: " + ex.Message; }
+            doc.Editor.WriteMessage("\n" + msg);
+            AcApp.ShowAlertDialog(msg);
+        }
+
         private static string Catalog(Document doc, System.Collections.Generic.List<DS.SheetItem> items, DS.DanhSoSettings s)
         {
             var db = doc.Database;
@@ -213,6 +231,18 @@ namespace VXT.GopCAD
                 Orientation = System.Windows.Controls.Orientation.Vertical,
                 ToolTip = "Đánh số, điền tên bản vẽ cho khung/layout và xuất danh mục bản vẽ (lệnh VXTDANHSO)",
                 CommandParameter = "\u0003\u0003VXTDANHSO ",
+                CommandHandler = new RibbonCmd()
+            });
+            src.Items.Add(new RibbonButton
+            {
+                Id = "VXT_BTN_INPDF",
+                Text = "In / Xuất\nPDF",
+                ShowText = true,
+                ShowImage = false,
+                Size = RibbonItemSize.Large,
+                Orientation = System.Windows.Controls.Orientation.Vertical,
+                ToolTip = "In hàng loạt hoặc xuất PDF các bản vẽ theo thứ tự số bản vẽ (lệnh VXTINPDF)",
+                CommandParameter = "\u0003\u0003VXTINPDF ",
                 CommandHandler = new RibbonCmd()
             });
             tab.Panels.Add(new RibbonPanel { Source = src });

@@ -431,7 +431,7 @@ namespace VXT.GopCAD.DanhSo
         }
 
         /// <summary>Đọc liên kết: khóa "handle|kind" → các entity mang xdata VXT_DSBV.</summary>
-        private static Dictionary<string, List<ObjectId>> LinkMap(Transaction tr, IEnumerable<ObjectId> spaceIds)
+        internal static Dictionary<string, List<ObjectId>> LinkMap(Transaction tr, IEnumerable<ObjectId> spaceIds)
         {
             var map = new Dictionary<string, List<ObjectId>>();
             foreach (var sid in spaceIds.Distinct())
@@ -482,7 +482,7 @@ namespace VXT.GopCAD.DanhSo
             tr.AddNewlyCreatedDBObject(l, true);
         }
 
-        private static void SetText(Entity e, string s)
+        internal static void SetText(Entity e, string s)
         {
             if (PlainText(e) == Clean(s)) return;   // không đổi -> giữ nguyên định dạng
             e.UpgradeOpen();
@@ -785,7 +785,13 @@ namespace VXT.GopCAD.DanhSo
                 tb.GenerateLayout();
                 btr.AppendEntity(tb);
                 tr.AddNewlyCreatedDBObject(tb, true);
-                Link(tb, CatalogKey(s), "TABLE");
+                // xdata bảng: TABLE, khóa, rồi handle khung/layout của từng dòng (để đồng bộ 2 chiều)
+                var rb = new ResultBuffer(
+                    new TypedValue((int)DxfCode.ExtendedDataRegAppName, App),
+                    new TypedValue(1000, "TABLE"),
+                    new TypedValue(1000, CatalogKey(s)));
+                foreach (var it in use) rb.Add(new TypedValue(1000, it.Handle));
+                tb.XData = rb;
                 tr.Commit();
 
                 void SetCell(int r, int c, string text, double h, CellAlignment al)

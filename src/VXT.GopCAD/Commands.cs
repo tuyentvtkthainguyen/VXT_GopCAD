@@ -56,34 +56,18 @@ namespace VXT.GopCAD
         {
             var doc = AcApp.DocumentManager.MdiActiveDocument;
             if (doc == null) return;
-            var db = doc.Database;
-            var ed = doc.Editor;
-            DS.DanhSoForm f;
-            try { f = new DS.DanhSoForm(db, ed); }
-            catch (System.Exception ex) { ed.WriteMessage("\nVXTDANHSO: " + ex.Message); return; }
-            using (f)
-                if (AcApp.ShowModalDialog(f) != System.Windows.Forms.DialogResult.OK) return;
-
-            var s = f.S;
-            var items = f.Items;
-            string msg;
-            try
+            if (form != null && !form.IsDisposed)
             {
-                using (doc.LockDocument())
-                {
-                    msg = DS.DanhSoEngine.Apply(db, items, s);
-                    if (s.Catalog) msg += Catalog(doc, items, s);
-                }
+                if (form.Tag == doc) { form.Show(); form.Activate(); return; }
+                form.Close();
             }
-            catch (System.Exception ex)
-            {
-                AcApp.ShowAlertDialog("Lỗi khi đánh số bản vẽ:\n" + ex.Message);
-                return;
-            }
-            ed.Regen();
-            ed.WriteMessage("\n" + msg.Replace("\n", "\n  ") + "\nGõ U để hoàn tác.");
-            AcApp.ShowAlertDialog(msg + "\n\nGõ U để hoàn tác nếu cần.");
+            try { form = new DS.DanhSoForm(doc) { Tag = doc }; }
+            catch (System.Exception ex) { doc.Editor.WriteMessage("\nVXTDANHSO: " + ex.Message); return; }
+            // hộp thoại không chặn: vẫn vẽ / sửa trên AutoCAD khi cửa sổ đánh số đang mở
+            AcApp.ShowModelessDialog(null, form, false);
         }
+
+        private static DS.DanhSoForm form;
 
         /// <summary>In hàng loạt / xuất PDF các bản vẽ theo thứ tự số bản vẽ.</summary>
         [CommandMethod("VXT", "VXTINPDF", CommandFlags.Modal)]
@@ -103,7 +87,7 @@ namespace VXT.GopCAD
             AcApp.ShowAlertDialog(msg);
         }
 
-        private static string Catalog(Document doc, System.Collections.Generic.List<DS.SheetItem> items, DS.DanhSoSettings s)
+        internal static string Catalog(Document doc, System.Collections.Generic.List<DS.SheetItem> items, DS.DanhSoSettings s)
         {
             var db = doc.Database;
             var ed = doc.Editor;
@@ -172,6 +156,7 @@ namespace VXT.GopCAD
         public void Initialize()
         {
             AcApp.Idle += OnIdle;
+            try { DS.DanhSoSync.Init(); } catch { }
         }
 
         public void Terminate() { }

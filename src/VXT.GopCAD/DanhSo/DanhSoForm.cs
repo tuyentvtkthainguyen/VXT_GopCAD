@@ -9,6 +9,8 @@ using System.Windows.Forms;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
+using System.Threading.Tasks;
+using Autodesk.AutoCAD.ApplicationServices;
 using AcApp = Autodesk.AutoCAD.ApplicationServices.Application;
 using Font = System.Drawing.Font;
 
@@ -17,6 +19,7 @@ namespace VXT.GopCAD.DanhSo
     /// <summary>Hộp thoại đánh số bản vẽ: chọn khung hoặc layout, vị trí điền số/tên, sửa tên, xuất danh mục.</summary>
     public class DanhSoForm : Form
     {
+        private readonly Document doc;
         private readonly Database db;
         private readonly Editor ed;
         public DanhSoSettings S { get; }
@@ -43,9 +46,9 @@ namespace VXT.GopCAD.DanhSo
         private readonly DataGridView grid = new DataGridView();
         private readonly Label lbCount = new Label();
 
-        public DanhSoForm(Database db, Editor ed)
+        public DanhSoForm(Document doc)
         {
-            this.db = db; this.ed = ed;
+            this.doc = doc; db = doc.Database; ed = doc.Editor;
             S = DanhSoSettings.Load();
 
             Text = "VXT - Đánh số bản vẽ tự động";
@@ -159,7 +162,10 @@ namespace VXT.GopCAD.DanhSo
             Controls.Add(lbCount);
 
             var btnOk = new Button { Text = "ĐÁNH SỐ", Bounds = new Rectangle(852, 620, 110, 32), Font = new Font(Font, FontStyle.Bold), Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
-            var btnClose = new Button { Text = "Đóng", Bounds = new Rectangle(968, 620, 84, 32), DialogResult = DialogResult.Cancel, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            var btnClose = new Button { Text = "Đóng", Bounds = new Rectangle(968, 620, 84, 32), Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            btnClose.Click += (s, e) => Close();
+            Text += "   (vẫn thao tác được trên AutoCAD khi cửa sổ này mở)";
+            doc.BeginDocumentClose += (s, e) => { try { Close(); } catch { } };
             btnOk.Click += (s, e) => Accept();
             Controls.AddRange(new Control[] { btnOk, btnClose });
             AcceptButton = null; CancelButton = btnClose;
@@ -218,8 +224,11 @@ namespace VXT.GopCAD.DanhSo
             Items = new List<SheetItem>();
             if (S.LayoutMode)
             {
-                Items = DanhSoEngine.Layouts(db);
-                tags = DanhSoEngine.Tags(db, Items);
+                using (Lock())
+                {
+                    Items = DanhSoEngine.Layouts(db);
+                    tags = DanhSoEngine.Tags(db, Items);
+                }
             }
             else
             {
@@ -285,10 +294,11 @@ namespace VXT.GopCAD.DanhSo
         }
 
         // ---------------- chọn khung / điểm ----------------
-        private void PickSample()
+        private void PickSample() => InCmd(PickSampleCore);
+
+        private void PickSampleCore()
         {
             PromptEntityResult r;
-            using (ed.StartUserInteraction(this))
             {
                 var o = new PromptEntityOptions("\nChọn 1 khung bản vẽ mẫu (block khung tên hoặc polyline kín): ");
                 o.SetRejectMessage("\nPhải là block hoặc polyline.");
@@ -325,10 +335,11 @@ namespace VXT.GopCAD.DanhSo
                 if (showMsg) MessageBox.Show(this, "Hãy chọn khung mẫu hoặc nhập mẫu tên block (dùng * và ?).", "VXT");
                 return;
             }
-            var list = DanhSoEngine.FindFrames(db, db.CurrentSpaceId, tbPattern.Text.Trim(), polyLayer);
+            List<SheetItem> list;
+            using (Lock()) list = DanhSoEngine.FindFrames(db, db.CurrentSpaceId, tbPattern.Text.Trim(), polyLayer);
             Items = DanhSoEngine.Sort(list, cbOrder.SelectedIndex);
             S.HasNumPt = S.HasNamePt = false;
-            tags = DanhSoEngine.Tags(db, Items);
+            using (Lock()) tags = DanhSoEngine.Tags(db, Items);
             FillPosCombos();
             DefaultNames();
             UpdateUi();
@@ -339,7 +350,11 @@ namespace VXT.GopCAD.DanhSo
         private void PickPoint(bool isNum)
         {
             if (Items.Count == 0) { MessageBox.Show(this, "Chưa có bản vẽ nào trong danh sách.", "VXT"); return; }
-            using (ed.StartUserInteraction(this))
+            InCmd(() => PickPointCore(isNum));
+        }
+
+        private void PickPointCore(bool isNum)
+        {
             {
                 if (S.LayoutMode)
                 {
@@ -381,7 +396,7 @@ namespace VXT.GopCAD.DanhSo
         {
             if (loading) return;
             ReadPos();
-            if (Items.Count > 0) DanhSoEngine.FillDefaultNames(db, Items, S);
+            if (Items.Count > 0) using (Lock()) DanhSoEngine.FillDefaultNames(db, Items, S);
             Renumber();
         }
 
@@ -466,8 +481,46 @@ namespace VXT.GopCAD.DanhSo
             S.Catalog = ckDm.Checked; S.CatalogTable = ckTable.Checked; S.CatalogCsv = ckCsv.Checked;
             S.CatalogSpace = S.LayoutMode ? (cbDest.SelectedItem as string ?? "Model") : LayoutManager.Current.CurrentLayout;
             S.Save();
-            DialogResult = DialogResult.OK;
-            Close();
+            InCmd(() =>
+            {
+                string msg;
+                using (doc.LockDocument())
+                {
+                    msg = DanhSoEngine.Apply(db, Items, S);
+                    if (S.Catalog) msg += DanhSoCommands.Catalog(doc, Items, S);
+                }
+                ed.Regen();
+                ed.WriteMessage("\n" + msg.Replace("\n", "\n  ") + "\nGõ U để hoàn tác.");
+                AcApp.ShowAlertDialog(msg + "\n\nSửa tên/số trong bảng danh mục hoặc trong khung tên: bên kia tự cập nhật.\nGõ U để hoàn tác nếu cần.");
+            });
         }
+
+        /// <summary>Chạy thao tác cần dòng lệnh AutoCAD (chọn đối tượng, ghi bản vẽ) khi hộp thoại đang mở không chặn.</summary>
+        private void InCmd(Action a)
+        {
+            if (AcApp.DocumentManager.MdiActiveDocument != doc)
+            {
+                MessageBox.Show(this, "Hãy chuyển về bản vẽ \"" + System.IO.Path.GetFileName(doc.Name) + "\" rồi thử lại.", "VXT");
+                return;
+            }
+            Hide();
+            try
+            {
+                AcApp.DocumentManager.ExecuteInCommandContextAsync(_ =>
+                {
+                    try { a(); }
+                    catch (Exception ex) { AcApp.ShowAlertDialog("VXT: " + ex.Message); }
+                    finally { try { Show(); Activate(); } catch { } }
+                    return Task.CompletedTask;
+                }, null);
+            }
+            catch (Exception ex)
+            {
+                Show();
+                MessageBox.Show(this, "Hãy kết thúc lệnh AutoCAD đang chạy (bấm Esc) rồi thử lại.\n" + ex.Message, "VXT");
+            }
+        }
+
+        private IDisposable Lock() => doc.LockDocument();
     }
 }

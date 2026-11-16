@@ -366,8 +366,9 @@ namespace VXT.GopCAD.DanhSo
         }
 
         private static readonly Regex TitleWord = new Regex(
-            @"^(MẶT BẰNG|MẶT CẮT|MẶT ĐỨNG|CHI TIẾT|BẢNG|BỐ TRÍ|SƠ ĐỒ|GHI CHÚ|CÁC QUY ĐỊNH|QUY ĐỊNH|THUYẾT MINH|KẾT CẤU|CẦU THANG|BẢN VẼ|TRIỂN KHAI|THỐNG KÊ)",
+            @"^(MẶT BẰNG|MẶT CẮT|MẶT ĐỨNG|CHI TIẾT|BỐ TRÍ|SƠ ĐỒ|GHI CHÚ|CÁC QUY ĐỊNH|QUY ĐỊNH|THUYẾT MINH|KẾT CẤU|CẦU THANG|BẢN VẼ|TRIỂN KHAI)",
             RegexOptions.IgnoreCase);
+        private static readonly Regex Schedule = new Regex(@"^(BẢNG|THỐNG KÊ)", RegexOptions.IgnoreCase);
         private static readonly Regex ScaleTail = new Regex(@"\s*[-–]?\s*\(?\s*(TL|TỶ LỆ|TỈ LỆ)\s*[:=]?\s*1\s*/\s*\d+\s*\)?\s*$", RegexOptions.IgnoreCase);
         private static readonly Regex EnumHead = new Regex(@"^\s*(\d+|[IVX]+)\s*[\.\)]\s+");
 
@@ -382,13 +383,23 @@ namespace VXT.GopCAD.DanhSo
             double hmax = inside.Max(t => t.H);
             // ưu tiên dòng có dạng tiêu đề bản vẽ (MẶT BẰNG, MẶT CẮT, CHI TIẾT, BẢNG...) đủ lớn
             var kw = inside.Where(t => t.H >= 0.6 * hmax && TitleWord.IsMatch(TidyTitle(t.Text))).ToList();
-            var pool = kw.Count > 0 ? kw : inside;
+            var pool = kw;
+            if (pool.Count == 0)
+            {
+                // không có tiêu đề kiểu "MẶT BẰNG/CHI TIẾT..." -> bỏ bảng thống kê nếu còn chữ khác đủ lớn
+                var other = inside.Where(t => t.H >= 0.6 * hmax && !Schedule.IsMatch(TidyTitle(t.Text))).ToList();
+                pool = other.Count > 0 ? other : inside;
+            }
             double hm = pool.Max(t => t.H);
             var top = pool.Where(t => t.H >= 0.9 * hm)
                           .OrderByDescending(t => Math.Round(t.C.Y / (2 * hm))).ThenBy(t => t.C.X)
                           .Select(t => TidyTitle(t.Text)).Where(t => t != "")
                           .Distinct(StringComparer.OrdinalIgnoreCase).Take(2).ToList();
-            return string.Join(" - ", top);
+            if (top.Count == 0) return "";
+            string res = top[0];
+            for (int i = 1; i < top.Count; i++) res += top[i].StartsWith("(") ? " " + top[i] : " - " + top[i];
+            if (!TitleWord.IsMatch(res) && !Schedule.IsMatch(res)) res = "CHI TIẾT " + res;
+            return res;
         }
 
         private static List<TBox> TextBoxes(Transaction tr, ObjectId spaceId)

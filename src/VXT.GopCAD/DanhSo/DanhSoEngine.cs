@@ -131,9 +131,23 @@ namespace VXT.GopCAD.DanhSo
             return UCode.Replace(s, m => ((char)int.Parse(m.Groups[1].Value, NumberStyles.HexNumber)).ToString());
         }
 
+        private static readonly Regex PctCode = new Regex("%%([uUoOcCdDpP%])");
+
         public static string Clean(string s)
         {
-            s = DecodeU(s ?? "").Replace("\r", " ").Replace("\n", " ").Replace("\t", " ");
+            s = DecodeU(s ?? "");
+            s = PctCode.Replace(s, m =>
+            {
+                switch (char.ToLowerInvariant(m.Groups[1].Value[0]))
+                {
+                    case 'c': return "Ø";
+                    case 'd': return "°";
+                    case 'p': return "±";
+                    case '%': return "%";
+                    default: return "";
+                }
+            });
+            s = s.Replace("\r", " ").Replace("\n", " ").Replace("\t", " ");
             while (s.Contains("  ")) s = s.Replace("  ", " ");
             return s.Trim();
         }
@@ -351,6 +365,14 @@ namespace VXT.GopCAD.DanhSo
             return r;
         }
 
+        private static readonly Regex TitleWord = new Regex(
+            @"^(MẶT BẰNG|MẶT CẮT|MẶT ĐỨNG|CHI TIẾT|BẢNG|BỐ TRÍ|SƠ ĐỒ|GHI CHÚ|CÁC QUY ĐỊNH|QUY ĐỊNH|THUYẾT MINH|KẾT CẤU|CẦU THANG|BẢN VẼ|TRIỂN KHAI|THỐNG KÊ)",
+            RegexOptions.IgnoreCase);
+        private static readonly Regex ScaleTail = new Regex(@"\s*[-–]?\s*\(?\s*(TL|TỶ LỆ|TỈ LỆ)\s*[:=]?\s*1\s*/\s*\d+\s*\)?\s*$", RegexOptions.IgnoreCase);
+        private static readonly Regex EnumHead = new Regex(@"^\s*(\d+|[IVX]+)\s*[\.\)]\s+");
+
+        private static string TidyTitle(string t) => EnumHead.Replace(ScaleTail.Replace(Clean(t), ""), "").Trim(' ', '-', ':');
+
         /// <summary>Tiêu đề lớn nhất trong khung (bỏ phần khung tên bên phải); nhiều tiêu đề cùng cỡ thì nối bằng " - ".</summary>
         private static string TitleIn(List<TTitle> titles, SheetItem it)
         {
@@ -358,9 +380,14 @@ namespace VXT.GopCAD.DanhSo
                                            t.C.Y > it.Min.Y && t.C.Y < it.Max.Y).ToList();
             if (inside.Count == 0) return "";
             double hmax = inside.Max(t => t.H);
-            var top = inside.Where(t => t.H >= 0.9 * hmax)
-                            .OrderByDescending(t => Math.Round(t.C.Y / (2 * hmax))).ThenBy(t => t.C.X)
-                            .Select(t => t.Text).Distinct(StringComparer.OrdinalIgnoreCase).Take(3).ToList();
+            // ưu tiên dòng có dạng tiêu đề bản vẽ (MẶT BẰNG, MẶT CẮT, CHI TIẾT, BẢNG...) đủ lớn
+            var kw = inside.Where(t => t.H >= 0.6 * hmax && TitleWord.IsMatch(TidyTitle(t.Text))).ToList();
+            var pool = kw.Count > 0 ? kw : inside;
+            double hm = pool.Max(t => t.H);
+            var top = pool.Where(t => t.H >= 0.9 * hm)
+                          .OrderByDescending(t => Math.Round(t.C.Y / (2 * hm))).ThenBy(t => t.C.X)
+                          .Select(t => TidyTitle(t.Text)).Where(t => t != "")
+                          .Distinct(StringComparer.OrdinalIgnoreCase).Take(2).ToList();
             return string.Join(" - ", top);
         }
 

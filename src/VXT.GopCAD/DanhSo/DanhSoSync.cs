@@ -126,7 +126,12 @@ namespace VXT.GopCAD.DanhSo
         private static string CellText(Table tb, int r, int c)
         {
             string raw = tb.Cells[r, c].TextString ?? "";
-            using (var m = new MText { Contents = raw }) return DanhSoEngine.Clean(m.Text);
+            try { using (var m = new MText { Contents = raw }) return DanhSoEngine.Clean(m.Text); }
+            catch
+            {
+                raw = System.Text.RegularExpressions.Regex.Replace(raw, @"\\[A-Za-z][^;\\]*;|[{}]", "");
+                return DanhSoEngine.Clean(raw.Replace("\\P", " "));
+            }
         }
 
         private static void SetCell(Table tb, int r, int c, string s)

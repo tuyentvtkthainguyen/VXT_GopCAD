@@ -317,6 +317,52 @@ namespace VXT.GopCAD.DanhSo
 
         // ---------------- text có sẵn & text liên kết ----------------
         private class TBox { public ObjectId Id; public Extents3d Ext; }
+        private class TTitle { public string Text; public double H; public Point3d C; }
+
+        private static readonly Regex NotTitle = new Regex(@"^\(?\s*(TL|TỶ LỆ|TỈ LỆ|SCALE)\b|^[\d\s.,:/()=+-]*$", RegexOptions.IgnoreCase);
+
+        /// <summary>Các dòng chữ (text, mtext, thuộc tính block) có thể là tiêu đề bản vẽ.</summary>
+        private static List<TTitle> Titles(Transaction tr, ObjectId spaceId)
+        {
+            var r = new List<TTitle>();
+            var btr = (BlockTableRecord)tr.GetObject(spaceId, OpenMode.ForRead);
+            void Add(Entity e, string txt, double h)
+            {
+                txt = Clean(txt);
+                if (txt.Length < 4 || txt.Length > 80 || h <= 0 || NotTitle.IsMatch(txt) || !txt.Any(char.IsLetter)) return;
+                if (!TryExtents(e, out var ext)) return;
+                r.Add(new TTitle { Text = txt, H = h, C = new Point3d((ext.MinPoint.X + ext.MaxPoint.X) / 2, (ext.MinPoint.Y + ext.MaxPoint.Y) / 2, 0) });
+            }
+            foreach (ObjectId id in btr)
+            {
+                string dxf = id.ObjectClass.DxfName;
+                if (dxf == "TEXT") { var t = (DBText)tr.GetObject(id, OpenMode.ForRead); Add(t, t.TextString, t.Height); }
+                else if (dxf == "MTEXT") { var m = (MText)tr.GetObject(id, OpenMode.ForRead); Add(m, m.Text, m.TextHeight); }
+                else if (dxf == "INSERT")
+                {
+                    var br = (BlockReference)tr.GetObject(id, OpenMode.ForRead);
+                    foreach (ObjectId aid in br.AttributeCollection)
+                    {
+                        var ar = (AttributeReference)tr.GetObject(aid, OpenMode.ForRead);
+                        if (!ar.Invisible) Add(ar, ar.TextString, ar.Height);
+                    }
+                }
+            }
+            return r;
+        }
+
+        /// <summary>Tiêu đề lớn nhất trong khung (bỏ phần khung tên bên phải); nhiều tiêu đề cùng cỡ thì nối bằng " - ".</summary>
+        private static string TitleIn(List<TTitle> titles, SheetItem it)
+        {
+            var inside = titles.Where(t => t.C.X > it.Min.X && t.C.X < it.Min.X + 0.85 * it.W &&
+                                           t.C.Y > it.Min.Y && t.C.Y < it.Max.Y).ToList();
+            if (inside.Count == 0) return "";
+            double hmax = inside.Max(t => t.H);
+            var top = inside.Where(t => t.H >= 0.9 * hmax)
+                            .OrderByDescending(t => Math.Round(t.C.Y / (2 * hmax))).ThenBy(t => t.C.X)
+                            .Select(t => t.Text).Distinct(StringComparer.OrdinalIgnoreCase).Take(3).ToList();
+            return string.Join(" - ", top);
+        }
 
         private static List<TBox> TextBoxes(Transaction tr, ObjectId spaceId)
         {
@@ -414,6 +460,7 @@ namespace VXT.GopCAD.DanhSo
             {
                 var links = LinkMap(tr, items.Select(i => i.SpaceId));
                 var boxCache = new Dictionary<ObjectId, List<TBox>>();
+                var titleCache = new Dictionary<ObjectId, List<TTitle>>();
                 foreach (var it in items)
                 {
                     if (it.NameEdited) continue;
@@ -436,6 +483,12 @@ namespace VXT.GopCAD.DanhSo
                             var tid = TextAt(boxes, p.Value);
                             if (!tid.IsNull) name = PlainText((Entity)tr.GetObject(tid, OpenMode.ForRead));
                         }
+                    }
+                    if (string.IsNullOrEmpty(name) && !it.IsLayout)
+                    {
+                        if (!titleCache.TryGetValue(it.SpaceId, out var titles))
+                            titleCache[it.SpaceId] = titles = Titles(tr, it.SpaceId);
+                        name = TitleIn(titles, it);
                     }
                     if (string.IsNullOrEmpty(name))
                         name = it.IsLayout ? LayoutBaseName(it.SpaceName, s) : RevitSheetName(it.Info);
@@ -513,15 +566,17 @@ namespace VXT.GopCAD.DanhSo
                         }
                         if (string.IsNullOrEmpty(str)) return;
                         var btr = (BlockTableRecord)tr.GetObject(it.SpaceId, OpenMode.ForWrite);
-                        var t = new DBText
-                        {
-                            TextString = str, Height = ht, Layer = s.Layer, TextStyleId = db.Textstyle,
-                            Position = pt, HorizontalMode = TextHorizontalMode.TextCenter,
-                            VerticalMode = TextVerticalMode.TextVerticalMid, AlignmentPoint = pt
-                        };
+                        var t = new MText();
+                        t.SetDatabaseDefaults(db);
+                        t.Contents = str.Replace("\\", "\\\\").Replace("{", "\\{").Replace("}", "\\}");
+                        t.TextHeight = kind == "NAME" ? 0.75 * ht : ht;
+                        t.Layer = s.Layer;
+                        t.TextStyleId = db.Textstyle;
+                        t.Location = pt;
+                        t.Attachment = AttachmentPoint.MiddleCenter;
+                        if (kind == "NAME") t.Width = it.IsLayout ? 0 : 0.12 * it.W;
                         btr.AppendEntity(t);
                         tr.AddNewlyCreatedDBObject(t, true);
-                        t.AdjustAlignment(db);
                         Link(t, it.Handle, kind);
                         links[key] = new List<ObjectId> { t.ObjectId };
                         nNew++;

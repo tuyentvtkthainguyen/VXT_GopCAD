@@ -10,6 +10,7 @@ using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
 using AcApp = Autodesk.AutoCAD.ApplicationServices.Application;
+using Font = System.Drawing.Font;
 
 namespace VXT.GopCAD.DanhSo
 {
@@ -199,6 +200,12 @@ namespace VXT.GopCAD.DanhSo
             grid.CellValueChanged += GridChanged;
 
             SwitchMode();
+        }
+
+        private static bool ValidName(string n)
+        {
+            if (n == "") return false;
+            try { SymbolUtilityServices.ValidateSymbolName(n, false); return true; } catch { return false; }
         }
 
         private static decimal Clamp(int v, NumericUpDown n) => Math.Max(n.Minimum, Math.Min(n.Maximum, v));
@@ -446,7 +453,7 @@ namespace VXT.GopCAD.DanhSo
             else if (S.NumMode == PosMode.Point && !S.HasNumPt) err = "Chưa chọn điểm đặt SỐ bản vẽ (nút \"Chọn điểm số...\").";
             else if (S.NameMode == PosMode.Point && !S.HasNamePt) err = "Chưa chọn điểm đặt TÊN bản vẽ (nút \"Chọn điểm tên...\").";
             else if (!htOk || ht < 0) err = "Chiều cao chữ không hợp lệ.";
-            else if (!SymbolUtilityServices.IsValidSymbolName(tbLayer.Text.Trim(), false)) err = "Tên layer không hợp lệ.";
+            else if (!ValidName(tbLayer.Text.Trim())) err = "Tên layer không hợp lệ.";
             else if (S.NumMode == PosMode.None && S.NameMode == PosMode.None && !(S.LayoutMode && ckRen.Checked) && !ckDm.Checked)
                 err = "Chưa chọn việc cần làm.";
             if (err == null) S.TextHeight = ht;

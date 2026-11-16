@@ -1,0 +1,38 @@
+name: Build VXT Gop CAD
+
+on:
+  push:
+    branches: [ '**' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Build plugin AutoCAD 2024
+        run: dotnet build src\VXT.GopCAD\VXT.GopCAD.csproj -c Release -nologo
+      - name: Build add-in Revit 2025
+        run: dotnet build src\VXT.RevitXuatCAD\VXT.RevitXuatCAD.csproj -c Release -nologo
+      - name: Build Setup.exe
+        run: dotnet build installer\VXT.Setup\VXT.Setup.csproj -c Release -nologo
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VXT_GopCAD_Setup
+          path: Output/setup_build/VXT_GopCAD_Setup_*.exe
+      - name: Publish release (vxt-gopcad-latest)
+        if: github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $exe = Get-ChildItem Output\setup_build\VXT_GopCAD_Setup_*.exe | Select-Object -First 1
+          gh release delete vxt-gopcad-latest --yes --cleanup-tag 2>$null
+          gh release create vxt-gopcad-latest $exe.FullName --title "VXT Gộp CAD (bản mới nhất, build ${{ github.run_number }})" --notes "Bản build tự động. Gồm: gộp DWG (VXTGOP), đánh số bản vẽ + danh mục (VXTDANHSO), add-in Revit xuất sheet."

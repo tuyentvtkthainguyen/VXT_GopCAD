@@ -18,7 +18,14 @@
     <RevitDir Condition="'$(RevitDir)'==''">C:\Program Files\Autodesk\Revit 2025\</RevitDir>
   </PropertyGroup>
 
-  <ItemGroup>
+  <PropertyGroup>
+    <UseRevitNuGet Condition="'$(UseRevitNuGet)' == '' And !Exists('$(RevitDir)RevitAPI.dll')">true</UseRevitNuGet>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(UseRevitNuGet)' == 'true'">
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2025.*" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2025.*" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseRevitNuGet)' != 'true'">
     <Reference Include="RevitAPI"><HintPath>$(RevitDir)RevitAPI.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="RevitAPIUI"><HintPath>$(RevitDir)RevitAPIUI.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>

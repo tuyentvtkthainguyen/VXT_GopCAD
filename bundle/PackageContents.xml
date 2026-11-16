@@ -18,6 +18,7 @@
                     AppType=".Net">
       <Commands GroupName="VXT">
         <Command Global="VXTGOP" Local="VXTGOP" />
+        <Command Global="VXTDANHSO" Local="VXTDANHSO" />
       </Commands>
     </ComponentEntry>
   </Components>

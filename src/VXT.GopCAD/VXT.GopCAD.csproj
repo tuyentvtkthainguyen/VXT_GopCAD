@@ -15,11 +15,21 @@
     <AcadDir Condition="'$(AcadDir)'==''">C:\Program Files\Autodesk\AutoCAD 2024\</AcadDir>
   </PropertyGroup>
 
-  <ItemGroup>
+  <!-- Máy không cài AutoCAD 2024 (CI GitHub): dùng gói tham chiếu AutoCAD.NET trên NuGet, chỉ để biên dịch -->
+  <PropertyGroup>
+    <UseAcadNuGet Condition="'$(UseAcadNuGet)' == '' And !Exists('$(AcadDir)acmgd.dll')">true</UseAcadNuGet>
+    <NoWarn>$(NoWarn);MSB3270;NU1701</NoWarn>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(UseAcadNuGet)' == 'true'">
+    <PackageReference Include="AutoCAD.NET" Version="24.3.0" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseAcadNuGet)' != 'true'">
     <Reference Include="acdbmgd"><HintPath>$(AcadDir)acdbmgd.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="accoremgd"><HintPath>$(AcadDir)accoremgd.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="acmgd"><HintPath>$(AcadDir)acmgd.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="AdWindows"><HintPath>$(AcadDir)AdWindows.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="WindowsBase" />

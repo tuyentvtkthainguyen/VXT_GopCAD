@@ -15,7 +15,14 @@
     <AcadDir Condition="'$(AcadDir)'==''">C:\Program Files\Autodesk\AutoCAD 2024\</AcadDir>
   </PropertyGroup>
 
-  <ItemGroup>
+  <PropertyGroup>
+    <UseAcadNuGet Condition="'$(UseAcadNuGet)' == '' And !Exists('$(AcadDir)acdbmgd.dll')">true</UseAcadNuGet>
+    <NoWarn>$(NoWarn);MSB3270;NU1701</NoWarn>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(UseAcadNuGet)' == 'true'">
+    <PackageReference Include="AutoCAD.NET.Core" Version="24.3.0" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseAcadNuGet)' != 'true'">
     <Reference Include="acdbmgd">
       <HintPath>$(AcadDir)acdbmgd.dll</HintPath>
       <Private>false</Private>

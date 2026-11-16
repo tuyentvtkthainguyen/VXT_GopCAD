@@ -23,6 +23,7 @@ namespace VXT.GopCAD
         private readonly CheckBox ckLabel = new CheckBox();
         private readonly CheckBox ckMangle = new CheckBox();
         private readonly CheckBox ckOpen = new CheckBox();
+        private readonly CheckBox ckDanhSo = new CheckBox();
         private readonly CheckBox ckSheet = new CheckBox();
         private readonly TextBox tbOut = new TextBox();
         private readonly ProgressBar pb = new ProgressBar();
@@ -32,7 +33,8 @@ namespace VXT.GopCAD
         private bool running, cancel;
 
         public string ResultPath { get; private set; }
-        public bool OpenAfter => ckOpen.Checked;
+        public bool OpenAfter => ckOpen.Checked || ckDanhSo.Checked;
+        public bool DanhSoAfter => ckDanhSo.Checked;
 
         public GopForm()
         {
@@ -120,6 +122,9 @@ namespace VXT.GopCAD
             ckOpen.Checked = true;
             ckOpen.SetBounds(12, 502, 200, 22);
             Controls.Add(ckOpen);
+            ckDanhSo.Text = "Đánh số bản vẽ + danh mục ngay sau khi gộp (lệnh VXTDANHSO)";
+            ckDanhSo.SetBounds(220, 502, 440, 22);
+            Controls.Add(ckDanhSo);
 
             pb.SetBounds(12, 528, 736, 16);
             Controls.Add(pb);
@@ -319,7 +324,7 @@ namespace VXT.GopCAD
                 MessageBox.Show(this, msg, "VXT - Gộp CAD", MessageBoxButtons.OK,
                                 res.Errors.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
                 running = false;
-                if (ckOpen.Checked) { DialogResult = DialogResult.OK; Close(); }
+                if (ckOpen.Checked || ckDanhSo.Checked) { DialogResult = DialogResult.OK; Close(); }
             }
             catch (Exception ex)
             {

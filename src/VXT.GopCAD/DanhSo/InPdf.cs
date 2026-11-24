@@ -79,6 +79,7 @@ namespace VXT.GopCAD.DanhSo
                 return "AutoCAD đang in việc khác, hãy thử lại sau.";
             var db = doc.Database;
             object oldBg = AcApp.GetSystemVariable("BACKGROUNDPLOT");
+            string oldLayout = LayoutManager.Current.CurrentLayout;
             AcApp.SetSystemVariable("BACKGROUNDPLOT", 0);
             int done = 0;
             var files = new List<string>();
@@ -108,6 +109,10 @@ namespace VXT.GopCAD.DanhSo
                         var it = use[i];
                         var btr = (BlockTableRecord)tr.GetObject(it.SpaceId, OpenMode.ForRead);
                         var layout = (Layout)tr.GetObject(btr.LayoutId, OpenMode.ForRead);
+                        // PlotEngine chỉ in được layout đang hiện hành (tránh lỗi eLayoutNotCurrent)
+                        var lm = LayoutManager.Current;
+                        if (!lm.CurrentLayout.Equals(layout.LayoutName, StringComparison.OrdinalIgnoreCase))
+                            lm.CurrentLayout = layout.LayoutName;
                         var pi = new PlotInfo { Layout = btr.LayoutId };
                         var ps = new PlotSettings(layout.ModelType);
                         ps.CopyFrom(layout);
@@ -183,6 +188,13 @@ namespace VXT.GopCAD.DanhSo
             finally
             {
                 AcApp.SetSystemVariable("BACKGROUNDPLOT", oldBg);
+                try
+                {
+                    using (doc.LockDocument())
+                        if (!LayoutManager.Current.CurrentLayout.Equals(oldLayout, StringComparison.OrdinalIgnoreCase))
+                            LayoutManager.Current.CurrentLayout = oldLayout;
+                }
+                catch { }
             }
             string msg = $"Đã in {done}/{use.Count} bản vẽ theo thứ tự ({use[0].Number} … {use[use.Count - 1].Number}).";
             if (s.ToFile) msg += s.Merge ? "\nFile PDF: " + s.OutPath : $"\n{files.Count} file PDF trong thư mục: " + s.OutPath;
